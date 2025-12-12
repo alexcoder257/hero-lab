@@ -405,7 +405,8 @@ Backend:
 - `CORS_ALLOWED_ORIGINS`: Allowed CORS origins
 
 Frontend:
-- `NEXT_PUBLIC_API_URL`: Backend API URL
+- `NEXT_PUBLIC_BASE_API_URL`: Backend API URL
+- `NEXT_PUBLIC_BASE_URL`: Frontend base URL
 
 ### Volumes
 
@@ -514,7 +515,7 @@ Hero Lab Development Team
 - Kiểm tra migrations: `python manage.py migrate`
 
 ### Frontend không connect được backend
-- Kiểm tra `NEXT_PUBLIC_API_URL` trong `.env` hoặc `next.config.js`
+- Kiểm tra `NEXT_PUBLIC_BASE_API_URL` trong `.env` hoặc `next.config.js`
 - Kiểm tra CORS settings trong Django settings
 
 ### Processing failed

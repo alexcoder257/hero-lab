@@ -17,5 +17,6 @@ urlpatterns = [
     path('list/', views.list_data, name='list_data'),
     path('process/<uuid:data_id>/', views.process_data, name='process_data'),
     path('result/<uuid:data_id>/', views.get_result, name='get_result'),
+    path('delete/<uuid:data_id>/', views.delete_data, name='delete_data'),
 ]
 

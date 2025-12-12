@@ -65,5 +65,11 @@
   .loading {
     @apply text-center p-8;
   }
+
+  /* Brush text color - keep numbers black */
+  .brush-black-text text {
+    fill: #000000 !important;
+    color: #000000 !important;
+  }
 }
 

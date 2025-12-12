@@ -209,3 +209,32 @@ def list_data(request):
     serializer = SignalDataSerializer(signal_data_list, many=True)
     return Response(serializer.data)
 
+
+@api_view(['DELETE'])
+@permission_classes([IsAuthenticated])
+def delete_data(request, data_id):
+    """Delete signal data file"""
+    try:
+        signal_data = SignalData.objects.get(id=data_id, user=request.user)
+    except SignalData.DoesNotExist:
+        return Response(
+            {'error': 'Signal data not found'},
+            status=status.HTTP_404_NOT_FOUND
+        )
+    
+    # Delete the file from storage
+    if signal_data.original_file:
+        try:
+            signal_data.original_file.delete(save=False)
+        except Exception as e:
+            # Log error but continue with deletion
+            print(f"Error deleting file: {e}")
+    
+    # Delete the database record
+    signal_data.delete()
+    
+    return Response(
+        {'message': 'Signal data deleted successfully'},
+        status=status.HTTP_200_OK
+    )
+
