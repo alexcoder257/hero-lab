@@ -7,6 +7,7 @@ import json
 from pathlib import Path
 from django.conf import settings
 from django.contrib.auth import get_user_model
+from django.views.decorators.csrf import csrf_exempt
 from rest_framework import viewsets, status, generics
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny, IsAuthenticated
@@ -35,6 +36,7 @@ def get_preprocessing_modules():
     return process_signal_file, calculate_all_metrics
 
 
+@csrf_exempt
 @api_view(['POST'])
 @permission_classes([AllowAny])
 def register(request):
@@ -53,6 +55,7 @@ def register(request):
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
+@csrf_exempt
 @api_view(['POST'])
 @permission_classes([AllowAny])
 def login(request):
