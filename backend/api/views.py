@@ -13,7 +13,6 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
-from calculator.metrics import calculate_all_manual
 from .models import SignalData, CalculationData
 from .serializers import (
     UserRegistrationSerializer,
@@ -253,7 +252,7 @@ def create_calculation(request):
     
     try:
         # Import calculation functions
-        
+        from calculator.metrics import calculate_all_manual
         
         # Get input values
         ri = serializer.validated_data['ri']

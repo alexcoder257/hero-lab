@@ -71,9 +71,9 @@ export interface CalculationData {
   foot_j: number;
   r_j: number;
   h: number;
-  hr: number;
-  ptt: number;
-  mbp: number;
+  hr: number | null;
+  ptt: number | null;
+  mbp: number | null;
   created_at: string;
   file_name?: string;
 }

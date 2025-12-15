@@ -368,13 +368,13 @@ export default function CalculationPage() {
                       {calc.file_name || "-"}
                     </td>
                     <td className="border border-gray-300 px-4 py-2 text-right">
-                      {calc.hr.toFixed(2)}
+                      {calc.hr != null ? calc.hr.toFixed(2) : '-'}
                     </td>
                     <td className="border border-gray-300 px-4 py-2 text-right">
-                      {calc.ptt.toFixed(6)}
+                      {calc.ptt != null ? calc.ptt.toFixed(6) : '-'}
                     </td>
                     <td className="border border-gray-300 px-4 py-2 text-right">
-                      {calc.mbp.toFixed(2)}
+                      {calc.mbp != null ? calc.mbp.toFixed(2) : '-'}
                     </td>
                     <td className="border border-gray-300 px-4 py-2 text-right">
                       <button
