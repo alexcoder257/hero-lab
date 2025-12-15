@@ -33,6 +33,7 @@ export default function CalculationPage() {
     try {
       setLoading(true);
       const data = await calculationAPI.list();
+      console.log("Loaded calculations:", data); // Debug log
       setCalculations(data);
     } catch (err) {
       console.error("Failed to load calculations:", err);
@@ -362,7 +363,16 @@ export default function CalculationPage() {
                 {calculations.map((calc) => (
                   <tr key={calc.id} className="hover:bg-gray-50">
                     <td className="border border-gray-300 px-4 py-2">
-                      {new Date(calc.created_at).toLocaleString()}
+                      {calc.created_at 
+                        ? (() => {
+                            try {
+                              const date = new Date(calc.created_at);
+                              return isNaN(date.getTime()) ? calc.created_at : date.toLocaleString();
+                            } catch {
+                              return calc.created_at;
+                            }
+                          })()
+                        : '-'}
                     </td>
                     <td className="border border-gray-300 px-4 py-2">
                       {calc.file_name || "-"}

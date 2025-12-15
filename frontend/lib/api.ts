@@ -66,11 +66,6 @@ export interface SignalData {
 
 export interface CalculationData {
   id: string;
-  ri: number;
-  ri_next: number;
-  foot_j: number;
-  r_j: number;
-  h: number;
   hr: number | null;
   ptt: number | null;
   mbp: number | null;

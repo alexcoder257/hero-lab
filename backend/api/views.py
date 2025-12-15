@@ -265,19 +265,23 @@ def create_calculation(request):
         # Calculate results
         results = calculate_all_manual(ri, ri_next, foot_j, r_j, h)
         
-        # Create calculation record
+        # Validate results
+        if not all(key in results for key in ['hr', 'ptt', 'mbp']):
+            raise ValueError("Calculation failed: missing results")
+        
+        # Create calculation record (only save results and file_name)
         calculation = CalculationData.objects.create(
             user=request.user,
-            ri=ri,
-            ri_next=ri_next,
-            foot_j=foot_j,
-            r_j=r_j,
-            h=h,
             hr=results['hr'],
             ptt=results['ptt'],
             mbp=results['mbp'],
             file_name=file_name or ''
         )
+        
+        # Verify the calculation was saved correctly
+        calculation.refresh_from_db()
+        if calculation.hr is None or calculation.ptt is None or calculation.mbp is None:
+            raise ValueError("Failed to save calculation results")
         
         return Response(
             CalculationDataSerializer(calculation).data,

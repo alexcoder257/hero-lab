@@ -60,8 +60,7 @@ class CalculationDataSerializer(serializers.ModelSerializer):
     class Meta:
         model = CalculationData
         fields = (
-            'id', 'user', 'ri', 'ri_next', 'foot_j', 'r_j', 'h',
-            'hr', 'ptt', 'mbp', 'created_at', 'file_name'
+            'id', 'user', 'hr', 'ptt', 'mbp', 'created_at', 'file_name'
         )
         read_only_fields = ('id', 'user', 'hr', 'ptt', 'mbp', 'created_at')
 
