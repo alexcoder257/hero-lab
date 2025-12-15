@@ -211,12 +211,13 @@ Frontend fetch và hiển thị
 #### 4.4.1. Waveform visualization
 
 - Hiển thị 3 waveforms đồng thời:
-  - Channel 1: Màu xanh dương (#8884d8)
-  - Channel 2: Màu xanh lá (#82ca9d)
-  - Channel 3: Màu vàng (#ffc658)
-- Trục X: Thời gian (giây)
-- Trục Y: Điện áp (Volt)
-- Tương tác: Zoom, pan, brush selection
+  - Channel 1: PCG (Phonocardiogram) - Màu xanh dương (#8884d8)
+  - Channel 2: PPG (Photoplethysmgram) - Màu xanh lá (#82ca9d)
+  - Channel 3: ECG (Electrocardiogram) - Màu vàng (#ffc658)
+- Trục X: Thời gian (milliseconds - ms)
+- Trục Y: Điện áp (millivolt - mV)
+- Grid pattern: Tỷ lệ 1mV : 40ms (giống ECG standard)
+- Tương tác: Zoom, pan, brush selection, reset view
 
 #### 4.4.2. Metrics display
 
@@ -225,7 +226,34 @@ Frontend fetch và hiển thị
 - SNR và dominant frequency
 - Overall metrics (tổng thể)
 
-### 4.5. Tối ưu hiệu năng
+### 4.5. Tính năng Calculation (Tính toán thủ công)
+
+#### 4.5.1. Manual Calculation
+
+Hệ thống cung cấp trang tính toán thủ công cho phép người dùng nhập các giá trị và tính toán:
+
+- **Heart Rate (HR)**: Nhịp tim (bpm)
+- **Pulse Transit Time (PTT)**: Thời gian truyền xung (giây)
+- **Mean Blood Pressure (MBP)**: Huyết áp trung bình (mmHg)
+
+#### 4.5.2. Input Fields
+
+Người dùng nhập các giá trị:
+- `ri`: R_i (seconds) - Thời điểm R peak thứ i
+- `ri_next`: R_i+1 (seconds) - Thời điểm R peak tiếp theo
+- `foot_j`: foot_j (seconds) - Thời điểm foot của sóng PPG
+- `r_j`: R_j (seconds) - Thời điểm R peak tương ứng
+- `h`: h (meters) - Chiều cao của người
+- `file_name`: Tên file tham chiếu (tùy chọn)
+
+#### 4.5.3. Lưu trữ và Lịch sử
+
+- Tất cả kết quả tính toán được lưu vào database
+- Hiển thị lịch sử tính toán trong bảng
+- Mỗi user chỉ xem được lịch sử của chính mình
+- Có thể xóa các bản ghi cũ
+
+### 4.6. Tối ưu hiệu năng
 
 - **Data sampling**: Với file lớn (>20k points), tự động sample để hiển thị tối đa 2000 points
 - **Lazy loading**: Chỉ load dữ liệu khi cần
@@ -239,32 +267,38 @@ Frontend fetch và hiển thị
 
 #### 5.1.1. Tính Time Step
 
-Hệ thống sử dụng 2 công thức để tính time step:
+Hệ thống sử dụng 3 công thức để tính time step:
 
-**Công thức f1 (từ Channel 1 - Amp1):**
+**Công thức f1 (từ Channel 1 - PCG - Amp1):**
 
 ```
 f1 = ((5/2) / (2^23)) × Amp1
 ```
 
-**Công thức f2 (từ Channel 2 - Amp2):**
+**Công thức f2 (từ Channel 2 - PPG - Amp2):**
 
 ```
-f2 = (10 × (Amp2 - 2^24) / 2) / (2^24 - 1)
+f2 = ((5/2) / (2^23)) × Amp2
 ```
 
-**Lưu ý về Channel 3:**
+**Công thức f3 (từ Channel 3 - ECG - Amp3):**
 
-- Channel 3 (Amp3) **không được sử dụng** để tính time step
-- Channel 3 chỉ được dùng để chuyển đổi ADC → Volt
-- Tất cả 3 channels sử dụng **chung một trục thời gian** được tính từ f1/f2
+```
+f3 = (10 × (Amp3 - 2^24) / 2) / (2^24 - 1)
+```
 
 **Logic lựa chọn:**
 
 - Ưu tiên sử dụng f1 nếu giá trị hợp lệ (0 < f1 < 1.0)
 - Fallback sang f2 nếu f1 không hợp lệ
-- Nếu cả hai không hợp lệ, sử dụng giá trị trung bình của các time step hợp lệ
+- Fallback sang f3 nếu cả f1 và f2 không hợp lệ
+- Nếu cả ba không hợp lệ, sử dụng giá trị trung bình của các time step hợp lệ
 - Default: 0.001s (1ms) nếu không có giá trị hợp lệ
+
+**Lưu ý:**
+
+- Tất cả 3 channels sử dụng **chung một trục thời gian** được tính từ f1/f2/f3
+- Các công thức được cập nhật để sử dụng cả 3 channels cho việc tính toán time step
 
 #### 5.1.2. Tính Trục Thời Gian
 
@@ -297,6 +331,103 @@ volt = (adc_value / max_adc) × (voltage_range / 2.0)
 
 - ADC = -233,112.45 → Volt = (-233,112.45 / 8,388,608) × 2.5 ≈ **-0.0695 V**
 - ADC = 680.54 → Volt = (680.54 / 8,388,608) × 2.5 ≈ **0.0002 V**
+
+#### 5.1.4. Hiển thị Chart với đơn vị ms và mV
+
+**Chuyển đổi đơn vị:**
+
+- **Thời gian**: Từ seconds (s) → milliseconds (ms)
+  ```
+  time_ms = time_s × 1000
+  ```
+
+- **Điện áp**: Từ Volt (V) → millivolt (mV)
+  ```
+  amplitude_mV = amplitude_V × 1000
+  ```
+
+**Grid Pattern:**
+
+- Grid được tạo với tỷ lệ **1mV : 40ms** (giống ECG standard)
+- Vertical lines: Mỗi 40ms
+- Horizontal lines: Mỗi 1mV
+- Grid lines được render bằng `ReferenceLine` của Recharts để đảm bảo chính xác
+- Grid chỉ hiển thị trong chart area, không phủ ra ngoài
+
+### 5.2. Manual Calculation (Tính toán thủ công)
+
+#### 5.2.1. Heart Rate (HR)
+
+**Công thức:**
+
+```
+HR = 60.0 / (R_i+1 - R_i)
+```
+
+Trong đó:
+- `R_i`: Thời điểm R peak thứ i (seconds)
+- `R_i+1`: Thời điểm R peak tiếp theo (seconds)
+- `HR`: Heart Rate (beats per minute - bpm)
+
+**Điều kiện:**
+- `R_i+1 > R_i` (phải lớn hơn)
+
+**Ví dụ:**
+- R_i = 1.0s, R_i+1 = 1.5s
+- HR = 60.0 / (1.5 - 1.0) = 60.0 / 0.5 = **120 bpm**
+
+#### 5.2.2. Pulse Transit Time (PTT)
+
+**Công thức:**
+
+```
+PTT = foot_j - R_j
+```
+
+Trong đó:
+- `foot_j`: Thời điểm foot của sóng PPG (seconds)
+- `R_j`: Thời điểm R peak tương ứng trong ECG (seconds)
+- `PTT`: Pulse Transit Time (seconds)
+
+**Điều kiện:**
+- `foot_j > R_j` (phải lớn hơn)
+
+**Ví dụ:**
+- foot_j = 1.2s, R_j = 1.0s
+- PTT = 1.2 - 1.0 = **0.2 seconds**
+
+#### 5.2.3. Mean Blood Pressure (MBP)
+
+**Công thức:**
+
+```
+MBP = (1.947 × h² / PTT²) + 31.84 × h
+```
+
+Trong đó:
+- `h`: Chiều cao của người (meters)
+- `PTT`: Pulse Transit Time (seconds)
+- `MBP`: Mean Blood Pressure (mmHg)
+
+**Điều kiện:**
+- `PTT > 0` (phải lớn hơn 0)
+
+**Ví dụ:**
+- h = 1.75m, PTT = 0.2s
+- MBP = (1.947 × 1.75² / 0.2²) + 31.84 × 1.75
+- MBP = (1.947 × 3.0625 / 0.04) + 55.72
+- MBP = (5.96 / 0.04) + 55.72
+- MBP = 149.0 + 55.72 = **204.72 mmHg**
+
+#### 5.2.4. Lưu trữ dữ liệu
+
+Hệ thống chỉ lưu trữ:
+- Kết quả tính toán: `hr`, `ptt`, `mbp`
+- `file_name`: Tên file tham chiếu (nếu có)
+- `created_at`: Thời gian tạo
+- `user`: User sở hữu
+
+**Lưu ý:** Các giá trị input (`ri`, `ri_next`, `foot_j`, `r_j`, `h`) **không được lưu** vào database, chỉ lưu kết quả tính toán.
 
 ---
 
@@ -353,14 +484,16 @@ Output: 3 arrays (amp1, amp2, amp3)
 #### Bước 3: Tính Time Steps
 
 ```
-Input: amp1, amp2
+Input: amp1, amp2, amp3
     ↓
 Tính f1 = ((5/2) / 2^23) × amp1
-Tính f2 = (10×(amp2-2^24)/2) / (2^24-1)
+Tính f2 = ((5/2) / 2^23) × amp2
+Tính f3 = (10×(amp3-2^24)/2) / (2^24-1)
     ↓
 Logic lựa chọn:
   - Ưu tiên f1 nếu hợp lệ (0 < f1 < 1.0)
-  - Fallback sang f2
+  - Fallback sang f2 nếu f1 không hợp lệ
+  - Fallback sang f3 nếu cả f1 và f2 không hợp lệ
   - Default: 0.001s
     ↓
 Output: time_steps array
@@ -442,14 +575,16 @@ Output: 3 arrays (amp1, amp2, amp3)
 #### Bước 3: Tính Time Steps
 
 ```
-Input: amp1, amp2
+Input: amp1, amp2, amp3
     ↓
 Tính f1 = ((5/2) / 2^23) × amp1
-Tính f2 = (10×(amp2-2^24)/2) / (2^24-1)
+Tính f2 = ((5/2) / 2^23) × amp2
+Tính f3 = (10×(amp3-2^24)/2) / (2^24-1)
     ↓
 Logic lựa chọn:
   - Ưu tiên f1 nếu hợp lệ (0 < f1 < 1.0)
-  - Fallback sang f2
+  - Fallback sang f2 nếu f1 không hợp lệ
+  - Fallback sang f3 nếu cả f1 và f2 không hợp lệ
   - Default: 0.001s
     ↓
 Output: time_steps array
@@ -588,7 +723,7 @@ Output: overall dict
 │  │ 2. Extract Channels (7, 8, 9)                      │    │
 │  └────────────────────────────────────────────────────┘    │
 │  ┌────────────────────────────────────────────────────┐    │
-│  │ 3. Calculate Time Steps (f1, f2)                   │    │
+│  │ 3. Calculate Time Steps (f1, f2, f3)              │    │
 │  └────────────────────────────────────────────────────┘    │
 │  ┌────────────────────────────────────────────────────┐    │
 │  │ 4. Calculate Time Axis                             │    │
@@ -756,12 +891,13 @@ Output: overall dict
 #### 8.3.3. Visualization Section
 
 - **3 Waveforms đồng thời**:
-  - Channel 1: Màu xanh dương
-  - Channel 2: Màu xanh lá
-  - Channel 3: Màu vàng
-- Trục X: Thời gian (giây)
-- Trục Y: Điện áp (Volt)
-- Tương tác: Zoom, pan, brush selection
+  - Channel 1: PCG (Phonocardiogram) - Màu xanh dương (#8884d8)
+  - Channel 2: PPG (Photoplethysmgram) - Màu xanh lá (#82ca9d)
+  - Channel 3: ECG (Electrocardiogram) - Màu vàng (#ffc658)
+- Trục X: Thời gian (milliseconds - ms)
+- Trục Y: Điện áp (millivolt - mV)
+- Grid pattern: Tỷ lệ 1mV : 40ms (giống ECG standard)
+- Tương tác: Zoom, pan, brush selection, reset view
 - Legend để bật/tắt từng channel
 
 #### 8.3.4. Metrics Display Section
@@ -778,6 +914,21 @@ Output: overall dict
   - Duration
   - Mean amplitude
   - Std amplitude
+
+#### 8.3.5. Calculation Page (`/calculation`)
+
+- **Input Form**:
+  - Form nhập các giá trị: ri, ri_next, foot_j, r_j, h
+  - Validation real-time
+  - Tên file tham chiếu (tùy chọn)
+- **Results Display**:
+  - Hiển thị kết quả tính toán ngay sau khi nhập (local calculation)
+  - HR (bpm), PTT (seconds), MBP (mmHg)
+- **History Table**:
+  - Bảng lịch sử tất cả các tính toán đã lưu
+  - Hiển thị: HR, PTT, MBP, file_name, created_at
+  - Nút xóa để xóa các bản ghi cũ
+  - Sắp xếp theo thời gian (mới nhất trước)
 
 ### 8.4. Responsive Design
 
@@ -927,6 +1078,13 @@ docker-compose up -d --build
 - `POST /api/data/process/{id}/` - Xử lý dữ liệu
 - `GET /api/data/result/{id}/` - Lấy kết quả
 - `GET /api/data/list/` - Danh sách file
+- `DELETE /api/data/delete/{id}/` - Xóa file
+
+#### B.3. Calculation Operations
+
+- `POST /api/calculations/create/` - Tạo calculation mới (HR, PTT, MBP)
+- `GET /api/calculations/list/` - Danh sách calculations của user
+- `DELETE /api/calculations/delete/{id}/` - Xóa calculation
 
 ### C. Cấu trúc dữ liệu
 

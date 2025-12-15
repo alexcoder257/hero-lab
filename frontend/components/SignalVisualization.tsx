@@ -12,6 +12,7 @@ import {
   ResponsiveContainer,
   Brush,
   ReferenceArea,
+  ReferenceLine,
 } from 'recharts';
 import { SignalData } from '@/lib/api';
 
@@ -148,6 +149,32 @@ function ChartWithZoom({
 
   const isZoomed = zoom.xDomain !== null || zoom.yDomain !== null;
 
+  // Calculate grid spacing based on 1mV : 40ms ratio
+  const gridSpacingX = 40; // 40ms per small square
+  const gridSpacingY = 1; // 1mV per small square
+  
+  // Generate grid lines for X axis (vertical lines every 40ms)
+  const xGridLines = useMemo(() => {
+    const lines: number[] = [];
+    const start = Math.floor(currentXDomain[0] / gridSpacingX) * gridSpacingX;
+    const end = Math.ceil(currentXDomain[1] / gridSpacingX) * gridSpacingX;
+    for (let x = start; x <= end; x += gridSpacingX) {
+      lines.push(x);
+    }
+    return lines;
+  }, [currentXDomain, gridSpacingX]);
+  
+  // Generate grid lines for Y axis (horizontal lines every 1mV)
+  const yGridLines = useMemo(() => {
+    const lines: number[] = [];
+    const start = Math.floor(currentYDomain[0] / gridSpacingY) * gridSpacingY;
+    const end = Math.ceil(currentYDomain[1] / gridSpacingY) * gridSpacingY;
+    for (let y = start; y <= end; y += gridSpacingY) {
+      lines.push(y);
+    }
+    return lines;
+  }, [currentYDomain, gridSpacingY]);
+
   return (
     <div className="relative">
       {isZoomed && (
@@ -169,26 +196,46 @@ function ChartWithZoom({
           onMouseUp={handleMouseUp}
           style={{ cursor: isSelecting ? 'crosshair' : 'default' }}
         >
-          <CartesianGrid strokeDasharray="3 3" />
+          {/* Custom grid with 1mV : 40ms ratio */}
+          {xGridLines.map((x, idx) => (
+            <ReferenceLine
+              key={`x-grid-${idx}`}
+              x={x}
+              stroke="#e8e8e8"
+              strokeWidth={0.5}
+              strokeDasharray="1 1"
+            />
+          ))}
+          {yGridLines.map((y, idx) => (
+            <ReferenceLine
+              key={`y-grid-${idx}`}
+              y={y}
+              stroke="#e8e8e8"
+              strokeWidth={0.5}
+              strokeDasharray="1 1"
+            />
+          ))}
           <XAxis 
             dataKey="time" 
-            label={{ value: 'Time (s)', position: 'bottom', offset: 10 }}
-            tickFormatter={(value) => value.toFixed(2)}
+            label={{ value: 'Time (ms)', position: 'bottom', offset: 10 }}
+            tickFormatter={(value) => value.toFixed(0)}
             domain={zoom.xDomain || undefined}
             allowDataOverflow={false}
             type="number"
             scale="linear"
+            tick={{ fontSize: 12 }}
           />
           <YAxis 
-            label={{ value: 'Amplitude (V)', angle: -90, position: 'left', offset: 10 }}
+            label={{ value: 'Amplitude (mV)', angle: -90, position: 'left', offset: 10 }}
             domain={zoom.yDomain || fullYDomain}
             allowDataOverflow={false}
             type="number"
             scale="linear"
+            tick={{ fontSize: 12 }}
           />
           <Tooltip 
-            formatter={(value) => typeof value === 'number' ? value.toFixed(4) : value}
-            labelFormatter={(value) => `Time: ${value.toFixed(2)} s`}
+            formatter={(value) => typeof value === 'number' ? `${value.toFixed(2)} mV` : value}
+            labelFormatter={(value) => `Time: ${value.toFixed(0)} ms`}
           />
           <Legend wrapperStyle={{ paddingTop: '40px' }} />
           {isSelecting && selectionStart !== null && selectionEnd !== null && (
@@ -217,7 +264,7 @@ function ChartWithZoom({
             stroke={channel.color}
             fill={channel.color}
             fillOpacity={0.3}
-            tickFormatter={(value) => value.toFixed(2)}
+            tickFormatter={(value) => value.toFixed(0)}
             onChange={handleBrushChange}
             alwaysShowText={true}
             startIndex={
@@ -253,12 +300,13 @@ export default function SignalVisualization({ data }: SignalVisualizationProps) 
     // Sample data for performance (show every Nth point)
     const sampleRate = Math.max(1, Math.floor(time.length / 2000));
     
+    // Convert: time from seconds to milliseconds, amplitude from Volt to millivolt
     return time
       .map((t, i) => ({
-        time: t,
-        channel1: channel1[i],
-        channel2: channel2[i],
-        channel3: channel3[i],
+        time: t * 1000, // Convert seconds to milliseconds
+        channel1: channel1[i] * 1000, // Convert Volt to millivolt
+        channel2: channel2[i] * 1000, // Convert Volt to millivolt
+        channel3: channel3[i] * 1000, // Convert Volt to millivolt
       }))
       .filter((_, i) => i % sampleRate === 0);
   }, [data.processed_data]);

@@ -71,5 +71,23 @@
     fill: #000000 !important;
     color: #000000 !important;
   }
+
+  /* ECG Grid Pattern - 1mV : 40ms ratio */
+  .ecg-grid {
+    background-color: #ffffff;
+    background-image: 
+      /* Large grid lines - 200ms x 5mV (thicker) */
+      linear-gradient(to right, #d0d0d0 1px, transparent 1px),
+      linear-gradient(to bottom, #d0d0d0 1px, transparent 1px),
+      /* Small grid lines - 40ms x 1mV (thinner) */
+      linear-gradient(to right, #e8e8e8 0.5px, transparent 0.5px),
+      linear-gradient(to bottom, #e8e8e8 0.5px, transparent 0.5px);
+    background-size: 
+      200px 1px,  /* 200ms spacing for large grid */
+      1px 50px,   /* 5mV spacing for large grid */
+      40px 1px,   /* 40ms spacing for small grid */
+      1px 10px;   /* 1mV spacing for small grid (visual adjustment) */
+    background-position: 0 0;
+  }
 }
 

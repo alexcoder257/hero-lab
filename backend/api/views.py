@@ -270,18 +270,26 @@ def create_calculation(request):
             raise ValueError("Calculation failed: missing results")
         
         # Create calculation record (only save results and file_name)
-        calculation = CalculationData.objects.create(
-            user=request.user,
-            hr=results['hr'],
-            ptt=results['ptt'],
-            mbp=results['mbp'],
-            file_name=file_name or ''
-        )
+        try:
+            calculation = CalculationData.objects.create(
+                user=request.user,
+                hr=results['hr'],
+                ptt=results['ptt'],
+                mbp=results['mbp'],
+                file_name=file_name or ''
+            )
+        except Exception as db_error:
+            # If database schema mismatch (old schema still exists), try with old fields
+            print(f"Database error (might be old schema): {db_error}")
+            # This should not happen if migration ran, but handle gracefully
+            raise ValueError(f"Database error: {str(db_error)}. Please run migrations.")
         
         # Verify the calculation was saved correctly
         calculation.refresh_from_db()
         if calculation.hr is None or calculation.ptt is None or calculation.mbp is None:
             raise ValueError("Failed to save calculation results")
+        
+        print(f"Created calculation {calculation.id} for user {request.user.id}")
         
         return Response(
             CalculationDataSerializer(calculation).data,
@@ -304,9 +312,20 @@ def create_calculation(request):
 @permission_classes([IsAuthenticated])
 def list_calculations(request):
     """List all calculations for current user"""
-    calculations = CalculationData.objects.filter(user=request.user)
-    serializer = CalculationDataSerializer(calculations, many=True)
-    return Response(serializer.data)
+    try:
+        calculations = CalculationData.objects.filter(user=request.user).order_by('-created_at')
+        count = calculations.count()
+        print(f"Found {count} calculations for user {request.user.id}")
+        serializer = CalculationDataSerializer(calculations, many=True)
+        return Response(serializer.data)
+    except Exception as e:
+        print(f"Error in list_calculations: {e}")
+        import traceback
+        traceback.print_exc()
+        return Response(
+            {'error': f'Failed to list calculations: {str(e)}'},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
 
 
 @api_view(['DELETE'])
