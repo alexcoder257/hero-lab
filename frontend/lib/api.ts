@@ -64,6 +64,20 @@ export interface SignalData {
   metrics?: any;
 }
 
+export interface CalculationData {
+  id: string;
+  ri: number;
+  ri_next: number;
+  foot_j: number;
+  r_j: number;
+  h: number;
+  hr: number;
+  ptt: number;
+  mbp: number;
+  created_at: string;
+  file_name?: string;
+}
+
 export const authAPI = {
   register: async (email: string, username: string, password: string): Promise<AuthResponse> => {
     const response = await api.post('/auth/register/', {
@@ -118,6 +132,29 @@ export const dataAPI = {
 
   delete: async (dataId: string): Promise<void> => {
     await api.delete(`/data/delete/${dataId}/`);
+  },
+};
+
+export const calculationAPI = {
+  create: async (data: {
+    ri: number;
+    ri_next: number;
+    foot_j: number;
+    r_j: number;
+    h: number;
+    file_name?: string;
+  }): Promise<CalculationData> => {
+    const response = await api.post('/calculations/create/', data);
+    return response.data;
+  },
+
+  list: async (): Promise<CalculationData[]> => {
+    const response = await api.get('/calculations/list/');
+    return response.data;
+  },
+
+  delete: async (calculationId: string): Promise<void> => {
+    await api.delete(`/calculations/delete/${calculationId}/`);
   },
 };
 

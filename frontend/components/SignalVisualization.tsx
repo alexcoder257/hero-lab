@@ -264,9 +264,9 @@ export default function SignalVisualization({ data }: SignalVisualizationProps) 
   }, [data.processed_data]);
 
   const channels = [
-    { key: 'channel1', name: 'Channel 1', color: '#8884d8', dataKey: 'channel1' },
-    { key: 'channel2', name: 'Channel 2', color: '#82ca9d', dataKey: 'channel2' },
-    { key: 'channel3', name: 'Channel 3', color: '#ffc658', dataKey: 'channel3' },
+    { key: 'channel1', name: 'PCG (Phonocardiogram)', color: '#8884d8', dataKey: 'channel1' },
+    { key: 'channel2', name: 'PPG (Photoplethysmgram)', color: '#82ca9d', dataKey: 'channel2' },
+    { key: 'channel3', name: 'ECG (Electrocardiogram)', color: '#ffc658', dataKey: 'channel3' },
   ];
 
   const metrics = data.metrics;

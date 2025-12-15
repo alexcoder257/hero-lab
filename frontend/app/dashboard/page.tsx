@@ -112,9 +112,17 @@ export default function DashboardPage() {
     <div className="container">
       <div className="flex justify-between items-center mb-8">
         <h1 className="text-3xl font-bold">Hero Lab Dashboard</h1>
-        <button className="btn btn-secondary" onClick={handleLogout}>
-          Logout
-        </button>
+        <div className="flex gap-3">
+          <button
+            className="btn btn-secondary"
+            onClick={() => router.push("/calculation")}
+          >
+            Calculation
+          </button>
+          <button className="btn btn-secondary" onClick={handleLogout}>
+            Logout
+          </button>
+        </div>
       </div>
 
       <div className="card">
