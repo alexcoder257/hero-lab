@@ -3,7 +3,7 @@ Serializers for Hero Lab API
 """
 from rest_framework import serializers
 from django.contrib.auth import get_user_model
-from .models import SignalData
+from .models import SignalData, CalculationData
 
 User = get_user_model()
 
@@ -52,4 +52,25 @@ class SignalDataSerializer(serializers.ModelSerializer):
 
 class SignalDataUploadSerializer(serializers.Serializer):
     file = serializers.FileField()
+
+
+class CalculationDataSerializer(serializers.ModelSerializer):
+    user = UserSerializer(read_only=True)
+    
+    class Meta:
+        model = CalculationData
+        fields = (
+            'id', 'user', 'ri', 'ri_next', 'foot_j', 'r_j', 'h',
+            'hr', 'ptt', 'mbp', 'created_at', 'file_name'
+        )
+        read_only_fields = ('id', 'user', 'hr', 'ptt', 'mbp', 'created_at')
+
+
+class CalculationDataInputSerializer(serializers.Serializer):
+    ri = serializers.FloatField()
+    ri_next = serializers.FloatField()
+    foot_j = serializers.FloatField()
+    r_j = serializers.FloatField()
+    h = serializers.FloatField()
+    file_name = serializers.CharField(required=False, allow_blank=True, max_length=255)
 

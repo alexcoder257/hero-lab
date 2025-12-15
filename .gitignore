@@ -7,13 +7,14 @@ __pycache__/
 env/
 venv/
 ENV/
+lab/
 build/
 develop-eggs/
 dist/
 downloads/
 eggs/
 .eggs/
-lib/
+# lib/
 lib64/
 parts/
 sdist/
@@ -57,4 +58,8 @@ Thumbs.db
 .env.development.local
 .env.test.local
 .env.production.local
+
+# Test data
+fake_signal_data_*.txt
+*.txt.bak
 

@@ -44,9 +44,9 @@ def extract_channels(data):
     Returns:
         tuple (amp1, amp2, amp3) - các mảng giá trị ADC
     """
-    # Cột 7 (index 6) = Channel 1 (Amp1)
-    # Cột 8 (index 7) = Channel 2 (Amp2)
-    # Cột 9 (index 8) = Channel 3 (Amp3)
+    # Cột 7 (index 6) = Channel 1 - PCG (Phonocardiogram) (Amp1)
+    # Cột 8 (index 7) = Channel 2 - PPG (Photoplethysmgram) (Amp2)
+    # Cột 9 (index 8) = Channel 3 - ECG (Electrocardiogram) (Amp3)
     amp1 = data[:, 6]  # Column 7
     amp2 = data[:, 7]  # Column 8
     amp3 = data[:, 8]  # Column 9
@@ -54,28 +54,39 @@ def extract_channels(data):
     return amp1, amp2, amp3
 
 
-def calculate_time_step(amp1, amp2):
+def calculate_time_step(amp1, amp2, amp3):
     """
-    Tính time step từ công thức f1 và f2
+    Tính time step từ công thức f1, f2 và f3
     
     Công thức:
-    f1 = ((5/2) / (2^23)) * Amp1
-    f2 = (10*(Amp2 - 2^24) / 2) / (2^24 - 1)
+    Channel 1 (PCG): f1 = ((5/2) / (2^23)) * Amp1
+    Channel 2 (PPG): f2 = ((5/2) / (2^23)) * Amp2
+    Channel 3 (ECG): f3 = (10*(Amp3 - 2^24) / 2) / (2^24 - 1)
     
     Args:
         amp1: Mảng giá trị Amp1
         amp2: Mảng giá trị Amp2
+        amp3: Mảng giá trị Amp3
         
     Returns:
         numpy array chứa time steps
     """
-    # Tính f1 và f2
+    # Tính f1, f2 và f3
     f1 = ((5.0 / 2.0) / (2**23)) * amp1
-    f2 = (10.0 * (amp2 - 2**24) / 2.0) / (2**24 - 1)
+    f2 = ((5.0 / 2.0) / (2**23)) * amp2
+    f3 = (10.0 * (amp3 - 2**24) / 2.0) / (2**24 - 1)
     
-    # Sử dụng f1 làm time step chính (hoặc có thể dùng f2)
-    # Nếu f1 có giá trị hợp lệ, dùng f1, ngược lại dùng f2
-    time_steps = np.where(np.abs(f1) > 1e-10, f1, f2)
+    # Sử dụng f1 làm time step chính, fallback sang f2, sau đó f3
+    # Nếu f1 có giá trị hợp lệ, dùng f1, ngược lại thử f2, cuối cùng dùng f3
+    time_steps = np.where(
+        (np.abs(f1) > 1e-10) & (f1 > 0) & (f1 < 1.0), 
+        f1,
+        np.where(
+            (np.abs(f2) > 1e-10) & (f2 > 0) & (f2 < 1.0),
+            f2,
+            f3
+        )
+    )
     
     # Đảm bảo time step dương và hợp lý
     # Nếu time step âm hoặc quá lớn, sử dụng giá trị trung bình
@@ -151,7 +162,7 @@ def process_signal_file(file_path):
     amp1, amp2, amp3 = extract_channels(data)
     
     # Tính time steps
-    time_steps = calculate_time_step(amp1, amp2)
+    time_steps = calculate_time_step(amp1, amp2, amp3)
     
     # Tính trục thời gian
     time = calculate_time_axis(time_steps)

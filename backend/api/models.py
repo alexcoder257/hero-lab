@@ -34,3 +34,28 @@ class SignalData(models.Model):
     class Meta:
         ordering = ['-uploaded_at']
 
+
+class CalculationData(models.Model):
+    """Model for manual calculation data (HR, PTT, MBP)"""
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='calculations')
+    
+    # Input values
+    ri = models.FloatField(help_text="R_i (seconds)")
+    ri_next = models.FloatField(help_text="R_i+1 (seconds)")
+    foot_j = models.FloatField(help_text="foot_j (seconds)")
+    r_j = models.FloatField(help_text="R_j (seconds)")
+    h = models.FloatField(help_text="h (meters)")
+    
+    # Calculated results
+    hr = models.FloatField(null=True, blank=True, help_text="Heart Rate (bpm)")
+    ptt = models.FloatField(null=True, blank=True, help_text="Pulse Transit Time (seconds)")
+    mbp = models.FloatField(null=True, blank=True, help_text="Mean Blood Pressure (mmHg)")
+    
+    # Metadata
+    created_at = models.DateTimeField(auto_now_add=True)
+    file_name = models.CharField(max_length=255, blank=True, help_text="Optional file name reference")
+    
+    class Meta:
+        ordering = ['-created_at']
+

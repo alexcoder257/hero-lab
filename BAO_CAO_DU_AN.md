@@ -253,6 +253,12 @@ f1 = ((5/2) / (2^23)) × Amp1
 f2 = (10 × (Amp2 - 2^24) / 2) / (2^24 - 1)
 ```
 
+**Lưu ý về Channel 3:**
+
+- Channel 3 (Amp3) **không được sử dụng** để tính time step
+- Channel 3 chỉ được dùng để chuyển đổi ADC → Volt
+- Tất cả 3 channels sử dụng **chung một trục thời gian** được tính từ f1/f2
+
 **Logic lựa chọn:**
 
 - Ưu tiên sử dụng f1 nếu giá trị hợp lệ (0 < f1 < 1.0)

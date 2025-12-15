@@ -13,12 +13,15 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
-from .models import SignalData
+from calculator.metrics import calculate_all_manual
+from .models import SignalData, CalculationData
 from .serializers import (
     UserRegistrationSerializer,
     UserSerializer,
     SignalDataSerializer,
-    SignalDataUploadSerializer
+    SignalDataUploadSerializer,
+    CalculationDataSerializer,
+    CalculationDataInputSerializer
 )
 
 User = get_user_model()
@@ -235,6 +238,90 @@ def delete_data(request, data_id):
     
     return Response(
         {'message': 'Signal data deleted successfully'},
+        status=status.HTTP_200_OK
+    )
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def create_calculation(request):
+    """Create a new calculation (HR, PTT, MBP)"""
+    serializer = CalculationDataInputSerializer(data=request.data)
+    
+    if not serializer.is_valid():
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+    try:
+        # Import calculation functions
+        
+        
+        # Get input values
+        ri = serializer.validated_data['ri']
+        ri_next = serializer.validated_data['ri_next']
+        foot_j = serializer.validated_data['foot_j']
+        r_j = serializer.validated_data['r_j']
+        h = serializer.validated_data['h']
+        file_name = serializer.validated_data.get('file_name', '')
+        
+        # Calculate results
+        results = calculate_all_manual(ri, ri_next, foot_j, r_j, h)
+        
+        # Create calculation record
+        calculation = CalculationData.objects.create(
+            user=request.user,
+            ri=ri,
+            ri_next=ri_next,
+            foot_j=foot_j,
+            r_j=r_j,
+            h=h,
+            hr=results['hr'],
+            ptt=results['ptt'],
+            mbp=results['mbp'],
+            file_name=file_name or ''
+        )
+        
+        return Response(
+            CalculationDataSerializer(calculation).data,
+            status=status.HTTP_201_CREATED
+        )
+    
+    except ValueError as e:
+        return Response(
+            {'error': str(e)},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+    except Exception as e:
+        return Response(
+            {'error': f'Calculation failed: {str(e)}'},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def list_calculations(request):
+    """List all calculations for current user"""
+    calculations = CalculationData.objects.filter(user=request.user)
+    serializer = CalculationDataSerializer(calculations, many=True)
+    return Response(serializer.data)
+
+
+@api_view(['DELETE'])
+@permission_classes([IsAuthenticated])
+def delete_calculation(request, calculation_id):
+    """Delete a calculation"""
+    try:
+        calculation = CalculationData.objects.get(id=calculation_id, user=request.user)
+    except CalculationData.DoesNotExist:
+        return Response(
+            {'error': 'Calculation not found'},
+            status=status.HTTP_404_NOT_FOUND
+        )
+    
+    calculation.delete()
+    
+    return Response(
+        {'message': 'Calculation deleted successfully'},
         status=status.HTTP_200_OK
     )
 

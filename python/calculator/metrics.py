@@ -218,6 +218,9 @@ def calculate_frequency_domain(channel_data, time_data):
 def calculate_all_metrics(processed_data):
     """
     Tính toán tất cả metrics cho cả 3 channels
+    - Channel 1: PCG (Phonocardiogram)
+    - Channel 2: PPG (Photoplethysmgram)
+    - Channel 3: ECG (Electrocardiogram)
     
     Args:
         processed_data: dict chứa time, channel1, channel2, channel3
@@ -273,6 +276,91 @@ def calculate_all_metrics(processed_data):
     }
     
     return results
+
+
+def calculate_hr(ri, ri_next):
+    """
+    Tính Heart Rate từ R peaks
+    
+    Công thức:
+    RR_i = R_i+1 - R_i
+    HR_i = 60 / RR_i
+    
+    Args:
+        ri: R_i (seconds)
+        ri_next: R_i+1 (seconds)
+        
+    Returns:
+        Heart Rate (bpm)
+    """
+    rr_i = ri_next - ri
+    if rr_i <= 0:
+        raise ValueError("R_i+1 must be greater than R_i")
+    hr = 60.0 / rr_i
+    return float(hr)
+
+
+def calculate_ptt(foot_j, r_j):
+    """
+    Tính Pulse Transit Time
+    
+    Công thức:
+    PTT_i = foot_i - R_i
+    
+    Args:
+        foot_j: foot_j (seconds)
+        r_j: R_j (seconds)
+        
+    Returns:
+        Pulse Transit Time (seconds)
+    """
+    ptt = foot_j - r_j
+    return float(ptt)
+
+
+def calculate_mbp(h, ptt):
+    """
+    Tính Mean Blood Pressure
+    
+    Công thức:
+    MBP = (1.947 * h² / PTT²) + 31.84 * h
+    
+    Args:
+        h: h (meters)
+        ptt: Pulse Transit Time (seconds)
+        
+    Returns:
+        Mean Blood Pressure (mmHg)
+    """
+    if ptt <= 0:
+        raise ValueError("PTT must be greater than 0")
+    mbp = (1.947 * (h ** 2) / (ptt ** 2)) + 31.84 * h
+    return float(mbp)
+
+
+def calculate_all_manual(ri, ri_next, foot_j, r_j, h):
+    """
+    Tính toán tất cả các giá trị HR, PTT, MBP từ input
+    
+    Args:
+        ri: R_i (seconds)
+        ri_next: R_i+1 (seconds)
+        foot_j: foot_j (seconds)
+        r_j: R_j (seconds)
+        h: h (meters)
+        
+    Returns:
+        dict chứa hr, ptt, mbp
+    """
+    hr = calculate_hr(ri, ri_next)
+    ptt = calculate_ptt(foot_j, r_j)
+    mbp = calculate_mbp(h, ptt)
+    
+    return {
+        "hr": hr,
+        "ptt": ptt,
+        "mbp": mbp
+    }
 
 
 if __name__ == "__main__":
