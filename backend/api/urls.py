@@ -20,8 +20,8 @@ urlpatterns = [
     path('delete/<uuid:data_id>/', views.delete_data, name='delete_data'),
     
     # Calculations
-    path('calculations/create/', views.create_calculation, name='create_calculation'),
-    path('calculations/list/', views.list_calculations, name='list_calculations'),
-    path('calculations/delete/<uuid:calculation_id>/', views.delete_calculation, name='delete_calculation'),
+    path('create/', views.create_calculation, name='create_calculation'),
+    path('list/', views.list_calculations, name='list_calculations'),
+    path('delete/<uuid:calculation_id>/', views.delete_calculation, name='delete_calculation'),
 ]
 
